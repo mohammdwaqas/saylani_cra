@@ -1,45 +1,61 @@
 import React, { Component } from "react";
-import logo from "./logo.svg";
+import { storage, firebase } from "./firebase";
 import "./App.css";
 import image from "./images/scan.jpg";
+
 class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      image: null,
+      url: null
+    };
+  }
+
+  fileSelectHandler = event => {
+    // console.log(event.target.files[0]);
+    const image = event.target.files[0];
+    this.setState({
+      image: image
+    });
+  };
+
+  uploadHandler = () => {
+    // console.log(this.state.image.name);
+    const { image, url } = this.state;
+    const task = storage.ref("images/" + image.name).put(image);
+
+    task.on(
+      "state_changed",
+      () => {
+        console.log("progress");
+      },
+      error => {
+        console.log(error.message);
+      },
+      () => {
+        storage
+          .ref("images/" + image.name)
+          .getDownloadURL()
+          .then(url => {
+            this.setState({ url }, () => {
+              let dbData = { imageName: image.name, url: url };
+              firebase
+                .database()
+                .ref("images")
+                .child("id-25")
+                .push(dbData);
+            });
+          });
+      }
+    );
+  };
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-          <h2>Welcome to our Pakistan.</h2>
-          <img
-            src={image}
-            width="200"
-            height="200"
-            onClick={() => {
-              Notification.requestPermission(status => {
-                console.log("Notification permission status:", status);
-              });
-            }}
-          />
-        </p>
-        <button
-          onClick={() => {
-            let options = {
-              body: "Welcome to Our App. "
-            };
-            if (Notification.permission == "granted") {
-              navigator.serviceWorker.getRegistration().then(reg => {
-                // TODO 2.4 - Add 'options' object to configure the notification
-
-                reg.showNotification("Hello world////", options);
-              });
-            }
-          }}
-        >
-          Show Notification
-        </button>
+        <input type="file" onChange={event => this.fileSelectHandler(event)} />
+        <img src={this.state.url} width="200" height="200" />
+        <button onClick={this.uploadHandler}>Upload File</button>
       </div>
     );
   }
