@@ -4,6 +4,16 @@ import "./App.css";
 import image from "./images/scan.jpg";
 
 class App extends Component {
+  componentDidMount = () => {
+    // firebase.dat
+    const targetNode = firebase.database().ref();
+    targetNode.once("value").then(snpanshot => {
+      this.setState({
+        url: snpanshot.val().images
+      });
+      // console.log(snpanshot.val().images);
+    });
+  };
   constructor(props) {
     super(props);
     this.state = {
@@ -38,13 +48,17 @@ class App extends Component {
           .ref("images/" + image.name)
           .getDownloadURL()
           .then(url => {
+            //THIS TIMESTAMP MUST BE CHANGED WITH USER UNIQUE REF. WHEN DEVELOPING ACTUAL LOGIC
+            let date = (Date.now() / 1000) | 0;
+            //THIS TIMESTAMP MUST BE CHANGED WITH USER UNIQUE REF. WHEN DEVELOPING ACTUAL LOGIC
+
             this.setState({ url }, () => {
               let dbData = { imageName: image.name, url: url };
               firebase
                 .database()
                 .ref("images")
-                .child("id-25")
-                .push(dbData);
+                .child(date)
+                .set(dbData);
             });
           });
       }
@@ -54,7 +68,7 @@ class App extends Component {
     return (
       <div className="App">
         <input type="file" onChange={event => this.fileSelectHandler(event)} />
-        <img src={this.state.url} width="200" height="200" />
+        <img src={this.state.url.url} width="200" height="200" />
         <button onClick={this.uploadHandler}>Upload File</button>
       </div>
     );
